@@ -1,0 +1,43 @@
+from hskpy.general.env import get_env
+import hskinit  ## Run hskinit
+import os
+import csv
+import numpy as np
+import matplotlib.pyplot as plt
+import datetime
+import matplotlib.colors as colors
+from hskpy.general.data import get_fname  ## Import get_fname function from data module
+from hskpy.general.data import plot_img, plot_xprof, plot_yprof ## import plotting functions from data module
+from hskpy.general.data import HskData ## importing HskData class
+from hskpy.general.data import ext_primary, ext_total, ext_offset # extensions of primary(=0), total(=1), and offset(=2)
+from hskpy.general.time import Dt2str
+from hskpy.general.calib import get_xbin_lim
+from hskpy.external.horizons import HorizonsData
+def draw_yprofile(fn, WR = [1208,1220]):
+    hskdat = HskData(fn)
+   
+    N = hskdat.get_nextend()
+    Nextend_list=[]
+    datatime = hskdat.get_timeDt
+    for i in range(3,N-1):
+        A = datatime(i-1).minute
+        B = datatime(i).minute
+        C = datatime(i+1).minute
+        if A+1 == B == C-1 :
+            Nextend_list.append(i)
+    
+    for j in Nextend_list:
+        img = hskdat.get_img(j)
+        xcal, c2r, c2rtbl = hskdat.get_cal(daily=False)
+        idx_wv = np.where((xcal[0] >= WR[0]) & (xcal <=WR[1]))[0]
+        yprof = np.nansum(img[:, idx_wv], axis=1)
+        st = hskdat.get_timeDt(j)
+        fig = plt.figure()
+        name = str(st.year) +'-0'+str(st.month) +'-'+str(st.day) +'-'+str(st.day) +'-'+ str(st.hour)+'-'+str(st.minute)+'_png'
+        path = os.path.join(resultpath,name)
+        plt.plot(np.arange(1024), yprof)
+        plt.xlim(480, 650) # set xrange (in wavelength)
+        plt.xlabel('bin number along the slit')
+        plt.ylabel('counts')    
+        plt.title(str(st)+'(Ly-alpha)')
+        plt.savefig(path)
